@@ -11,10 +11,8 @@ import (
 )
 
 
-// Shared map to store jobs
 var jobs = make(map[int64]Job)
 
-// Mutex to synchronize access to the jobs map
 var jobsMutex = &sync.Mutex{}
 
 
@@ -39,7 +37,6 @@ func ProcessJob(jobID int64, storeJobs []StoreJobRequest) error {
 	completedStores := 0
 
 	for _, storeJob := range storeJobs {
-		// Check if the store exists in the StoreMaster data
 		if _, exists := StoreMasterData[storeJob.StoreID]; !exists {
 			errChan <- map[string]string{
 				"store_id": storeJob.StoreID,
@@ -48,12 +45,11 @@ func ProcessJob(jobID int64, storeJobs []StoreJobRequest) error {
 			continue
 		}
 
-		// Process images for the store
 		for _, url := range storeJob.ImageURLs {
 			wg.Add(1)
 			go func(imgURL string, storeID string) {
 				defer wg.Done()
-				// Process the image, if it fails, send an error
+
 				if err := processImage(imgURL); err != nil {
 					errChan <- map[string]string{
 						"store_id": storeID,
@@ -63,20 +59,17 @@ func ProcessJob(jobID int64, storeJobs []StoreJobRequest) error {
 			}(url, storeJob.StoreID)
 		}
 
-		// Increment the count for stores successfully added to processing
 		completedStores++
 	}
 
 	wg.Wait()
 	close(errChan)
 
-	// Collect errors
 	var errors []map[string]string
 	for err := range errChan {
 		errors = append(errors, err)
 	}
 
-	// Update job status
 	jobsMutex.Lock()
 	defer jobsMutex.Unlock()
 

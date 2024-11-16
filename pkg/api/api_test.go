@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strconv" // Add this import
+	"strconv"
 	"testing"
 )
 
 func TestSubmitJobHandler_Success(t *testing.T) {
-	// Create a valid payload
 	payload := `{
 		"count": 1,
 		"visits": [
@@ -36,7 +35,6 @@ func TestSubmitJobHandler_Success(t *testing.T) {
 		t.Errorf("Expected status %d, got %d", http.StatusCreated, status)
 	}
 
-	// Check for job_id in the response
 	var response map[string]interface{}
 	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
 		t.Fatal(err)
@@ -79,7 +77,6 @@ func TestSubmitJobHandler_EmptyPayload(t *testing.T) {
 }
 
 func TestGetJobStatusHandler_Success(t *testing.T) {
-	// Simulate a job creation first
 	payload := `{
 		"count": 1,
 		"visits": [
@@ -100,16 +97,14 @@ func TestGetJobStatusHandler_Success(t *testing.T) {
 	handler := http.HandlerFunc(SubmitJobHandler)
 	handler.ServeHTTP(rr, req)
 
-	// Extract job_id from the response
 	var response map[string]interface{}
 	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
 		t.Fatal(err)
 	}
 
 	jobID := response["job_id"].(float64)
-	jobIDStr := strconv.Itoa(int(jobID)) // Convert to string
+	jobIDStr := strconv.Itoa(int(jobID))
 
-	// Now test the status endpoint with this job_id
 	reqStatus, err := http.NewRequest("GET", "/api/status?jobid="+jobIDStr, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +130,6 @@ func TestGetJobStatusHandler_Success(t *testing.T) {
 }
 
 func TestGetJobStatusHandler_Failure(t *testing.T) {
-	// Test for a non-existing job_id
 	reqStatus, err := http.NewRequest("GET", "/api/status?jobid=999", nil)
 	if err != nil {
 		t.Fatal(err)

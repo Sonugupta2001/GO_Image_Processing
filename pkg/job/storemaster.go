@@ -7,7 +7,6 @@ import (
 	"os"
 )
 
-// StoreMaster represents a store's data.
 type StoreMaster struct {
 	StoreID   string
 	StoreName string

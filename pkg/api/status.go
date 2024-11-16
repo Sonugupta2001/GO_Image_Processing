@@ -16,7 +16,6 @@ func GetJobStatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Locking to check the job status
 	jobsMutex.Lock()
 	j, exists := jobs[jobID]
 	jobsMutex.Unlock()
@@ -26,25 +25,23 @@ func GetJobStatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Prepare base response
 	response := map[string]interface{}{
 		"status": j.Status,
 		"job_id": strconv.FormatInt(jobID, 10),
 	}
 
-	// Add errors only if the job failed
 	if j.Status == "failed" {
 		var errorDetails []map[string]string
 		for _, errMsg := range j.Errors {
 			errorDetails = append(errorDetails, map[string]string{
 				"store_id": errMsg["store_id"],
-				"error":    "", // Keep error message empty as per requirements
+				"error":    "",
 			})
 		}
 		response["error"] = errorDetails
 	}
 
-	// Send JSON response
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }

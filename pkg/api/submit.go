@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-// Job state
+
 var jobs = make(map[int64]*job.Job)
 var jobsMutex sync.Mutex
 var jobCounter int64
@@ -29,12 +29,11 @@ func jobProcessor(j *job.Job) {
 		if _, exists := job.StoreMasterData[storeJob.StoreID]; !exists {
 			errors = append(errors, map[string]string{
 				"store_id": storeJob.StoreID,
-				"error":    "", // No specific error message for invalid store IDs
+				"error":    "",
 			})
 		}
 	}
 
-	// Process the job after store validation
 	err := job.ProcessJob(j.ID, j.StoreJobs)
 
 	jobsMutex.Lock()
@@ -43,7 +42,6 @@ func jobProcessor(j *job.Job) {
 	if len(errors) > 0 || err != nil {
 		j.Status = "failed"
 
-		// Add validation errors for invalid stores
 		if len(errors) > 0 {
 			j.Errors = append(j.Errors, errors...)
 		}
@@ -67,21 +65,19 @@ func SubmitJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the payload is empty
 	if jobRequest.Count == 0 && len(jobRequest.Visits) == 0 {
-		w.Header().Set("Content-Type", "application/json") // Ensure JSON response
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Empty payload"})
 		return
 	}
 
-	// Validate top-level fields
 	if jobRequest.Count != len(jobRequest.Visits) {
 		http.Error(w, "`count` does not match number of `visits`", http.StatusBadRequest)
 		return
 	}
 
-	// Create the job
+
 	jobsMutex.Lock()
 	jobCounter++
 	jobID := jobCounter
@@ -93,14 +89,12 @@ func SubmitJobHandler(w http.ResponseWriter, r *http.Request) {
 	jobs[jobID] = jobObj
 	jobsMutex.Unlock()
 
-	// Process the job asynchronously
 	go jobProcessor(jobObj)
 
-	// Respond with job ID and initial status
 	w.WriteHeader(http.StatusCreated)
 	response := map[string]interface{}{
 		"job_id": jobID,
-		"status": jobObj.Status, // This will be "pending" initially
+		"status": jobObj.Status,
 	}
 
 	json.NewEncoder(w).Encode(response)

@@ -23,7 +23,6 @@ func main() {
 
 	server := &http.Server{Addr: ":8080"}
 
-	// Graceful shutdown handling
 	go func() {
 		log.Println("Server running on http://localhost:8080")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -31,7 +30,6 @@ func main() {
 		}
 	}()
 
-	// Listen for OS signals
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	<-stop
