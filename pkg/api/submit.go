@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"retailpulse-image-service/pkg/job"
 	"sync"
@@ -18,6 +17,7 @@ type JobRequest struct {
 	Visits []job.StoreJobRequest
 }
 
+
 func jobProcessor(j *job.Job) {
 	jobsMutex.Lock()
 	j.Status = "ongoing"
@@ -26,13 +26,11 @@ func jobProcessor(j *job.Job) {
 	var errors []map[string]string
 
 	for _, storeJob := range j.StoreJobs {
-		// Validate store ID directly from the global `storeMaster` map
 		if _, exists := job.StoreMasterData[storeJob.StoreID]; !exists {
 			errors = append(errors, map[string]string{
 				"store_id": storeJob.StoreID,
-				"error":    fmt.Sprintf("store_id %s does not exist", storeJob.StoreID),
+				"error":    "", // No specific error message for invalid store IDs
 			})
-			continue
 		}
 	}
 
@@ -45,21 +43,17 @@ func jobProcessor(j *job.Job) {
 	if len(errors) > 0 || err != nil {
 		j.Status = "failed"
 
-		if err != nil {
-			errors = append(errors, map[string]string{
-				"store_id": "Unknown",
-				"error":    err.Error(),
-			})
+		// Add validation errors for invalid stores
+		if len(errors) > 0 {
+			j.Errors = append(j.Errors, errors...)
 		}
 
-		// Add the errors to the job
-		for _, e := range errors {
-			j.Errors = append(j.Errors, fmt.Sprintf("store_id %s: %s", e["store_id"], e["error"]))
-		}
 	} else {
 		j.Status = "completed"
 	}
 }
+
+
 
 func SubmitJobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -102,15 +96,11 @@ func SubmitJobHandler(w http.ResponseWriter, r *http.Request) {
 	// Process the job asynchronously
 	go jobProcessor(jobObj)
 
+	// Respond with job ID and initial status
 	w.WriteHeader(http.StatusCreated)
 	response := map[string]interface{}{
 		"job_id": jobID,
-		"status": jobObj.Status,
-	}
-
-	// If the job failed, include errors in the response
-	if jobObj.Status == "failed" {
-		response["error"] = jobObj.Errors
+		"status": jobObj.Status, // This will be "pending" initially
 	}
 
 	json.NewEncoder(w).Encode(response)
