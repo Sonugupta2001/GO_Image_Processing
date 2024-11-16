@@ -1,5 +1,4 @@
 package job
-
 import (
 	"testing"
 )
