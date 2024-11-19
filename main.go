@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	err := job.LoadStoreMaster("/Users/sonulalgupta/Desktop/retailpulse-image-service/StoreMaster.csv")
+	err := job.LoadStoreMaster("./StoreMaster.csv")
 	if err != nil {
 		log.Fatalf("Error loading store master file: %v", err)
 	}
